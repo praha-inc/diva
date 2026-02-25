@@ -62,3 +62,22 @@ export const createContext: CreateContext = <T>({
 
   return context;
 };
+
+export type WithContexts = {
+  <R>(contexts: Array<(fn: () => R) => R>, fn: () => R): R;
+  <R>(contexts: Array<(fn: () => R) => R>): (fn: () => R) => R;
+};
+
+export const withContexts: WithContexts = <R>(
+  contexts: Array<(fn: () => R) => R>,
+  fn?: () => R,
+): R | ((fn: () => R) => R) => {
+  const execute = (fn: () => R): R => {
+    const [provider, ...rest] = contexts;
+    if (!provider) return fn();
+    return provider(() => withContexts(rest, fn));
+  };
+
+  if (fn !== undefined) return execute(fn);
+  return execute;
+};

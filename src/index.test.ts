@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 
-import { createContext } from './index';
+import { createContext, withContexts } from './index';
 
 describe('createContext', () => {
   class Counter {
@@ -299,6 +299,114 @@ describe('createContext', () => {
         const transientValue2 = counter();
         expect(transientValue2).not.toBe(scoped);
         expect(transientValue2.current).toBe(0);
+      });
+    });
+  });
+});
+
+describe('withContexts', () => {
+  class Database {
+    constructor(public name: string) {}
+  }
+
+  class Mailer {
+    constructor(public name: string) {}
+  }
+
+  const database = createContext<Database>();
+  const mailer = createContext<Mailer>();
+
+  describe('when context is not provided', () => {
+    test('should execute the function', () => {
+      const fn = vi.fn(() => 'result');
+      const result = withContexts([], fn);
+
+      expect(fn).toBeCalledTimes(1);
+      expect(result).toBe('result');
+    });
+  });
+
+  describe('when context is provided', () => {
+    test('should provide the context to the function', () => {
+      const fn = vi.fn(() => {
+        expect(database().name).toBe('database');
+        return 'result';
+      });
+
+      const result = withContexts([
+        database.scoped(() => new Database('database')),
+      ], fn);
+
+      expect(fn).toBeCalledTimes(1);
+      expect(result).toBe('result');
+    });
+  });
+
+  describe('when multiple contexts are provided', () => {
+    test('should provide all contexts to the function', () => {
+      const fn = vi.fn(() => {
+        expect(database()).toBeInstanceOf(Database);
+        expect(database().name).toBe('database');
+        expect(mailer()).toBeInstanceOf(Mailer);
+        expect(mailer().name).toBe('mailer');
+        return 'result';
+      });
+
+      const result = withContexts([
+        database.scoped(() => new Database('database')),
+        mailer.scoped(() => new Mailer('mailer')),
+      ], fn);
+
+      expect(fn).toBeCalledTimes(1);
+      expect(result).toBe('result');
+    });
+  });
+
+  describe('when using curried form', () => {
+    describe('when context is provided', () => {
+      test('should execute the function', () => {
+        const runner = withContexts([]);
+        const fn = vi.fn(() => 'result');
+        const result = runner(fn);
+
+        expect(fn).toBeCalledTimes(1);
+        expect(result).toBe('result');
+      });
+    });
+
+    describe('when context is provided', () => {
+      test('should provide the context ', () => {
+        const runner = withContexts([
+          database.scoped(() => new Database('database')),
+        ]);
+        const fn = vi.fn(() => {
+          expect(database().name).toBe('database');
+          return 'result';
+        });
+
+        const result = runner(fn);
+
+        expect(fn).toBeCalledTimes(1);
+        expect(result).toBe('result');
+      });
+    });
+
+    describe('when multiple contexts are provided', () => {
+      test('should provide all contexts', () => {
+        const runner = withContexts([
+          database.scoped(() => new Database('database')),
+          mailer.scoped(() => new Mailer('mailer')),
+        ]);
+        const fn = vi.fn(() => {
+          expect(database().name).toBe('database');
+          expect(mailer().name).toBe('mailer');
+          return 'result';
+        });
+
+        const result = runner(fn);
+
+        expect(fn).toBeCalledTimes(1);
+        expect(result).toBe('result');
       });
     });
   });
