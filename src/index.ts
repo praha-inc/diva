@@ -1,4 +1,5 @@
 import { StackStorage } from './internal/stack-storage';
+import { Mock } from './internal/symbol';
 
 export type Context<T> = {
   (): T;
@@ -10,6 +11,7 @@ export type Context<T> = {
     <R>(builder: () => T, fn: () => R): R;
     (builder: () => T): <R>(fn: () => R) => R;
   };
+  [Mock]: T | (() => T) | undefined;
 };
 
 export type CreateContext = {
@@ -25,6 +27,9 @@ export const createContext: CreateContext = <T>({
   const context = (() => {
     using builder = storage.getItem();
     if (!builder) {
+      if (context[Mock] !== undefined) {
+        return typeof context[Mock] === 'function' ? (context[Mock] as () => T)() : context[Mock];
+      }
       if (required) {
         throw new Error('Context not provided. Use scoped() or transient() to set a value.');
       }
