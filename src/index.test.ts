@@ -13,7 +13,7 @@ describe('createContext', () => {
     }
   }
 
-  const counter = createContext<Counter>();
+  const [counter, withCounter] = createContext<Counter>();
 
   describe('when context is not provided', () => {
     test('should throw an error', () => {
@@ -21,7 +21,7 @@ describe('createContext', () => {
     });
 
     describe('when required is set to false', () => {
-      const counter = createContext<Counter>({ required: false });
+      const [counter] = createContext<Counter>({ required: false });
 
       test('should return undefined', () => {
         expect(counter()).toBeUndefined();
@@ -33,13 +33,13 @@ describe('createContext', () => {
     const builder = vi.fn(() => new Counter());
 
     test('should return the provided context', () => {
-      counter.scoped(builder, () => {
+      withCounter(builder, () => {
         expect(counter().current).toBe(0);
       });
     });
 
     test('should return the same context', () => {
-      counter.scoped(builder, () => {
+      withCounter(builder, () => {
         const first = counter();
         const second = counter();
 
@@ -52,10 +52,10 @@ describe('createContext', () => {
       const outerBuilder = vi.fn(() => new Counter());
       const innerBuilder = vi.fn(() => new Counter());
 
-      counter.scoped(outerBuilder, () => {
+      withCounter(outerBuilder, () => {
         const outer = counter();
 
-        counter.scoped(innerBuilder, () => {
+        withCounter(innerBuilder, () => {
           const inner = counter();
           expect(inner).not.toBe(outer);
         });
@@ -68,10 +68,10 @@ describe('createContext', () => {
       const outerBuilder = vi.fn(() => new Counter());
       const innerBuilder = vi.fn(() => counter());
 
-      counter.scoped(outerBuilder, () => {
+      withCounter(outerBuilder, () => {
         const outer = counter();
 
-        counter.scoped(innerBuilder, () => {
+        withCounter(innerBuilder, () => {
           const inner = counter();
           expect(inner).toBe(outer);
         });
@@ -82,7 +82,7 @@ describe('createContext', () => {
 
     describe('when using curried form', () => {
       test('should return the provided context', () => {
-        const run = counter.scoped(builder);
+        const run = withCounter(builder);
 
         run(() => {
           expect(counter().current).toBe(0);
@@ -90,7 +90,7 @@ describe('createContext', () => {
       });
 
       test('should return the same context', () => {
-        const run = counter.scoped(builder);
+        const run = withCounter(builder);
 
         run(() => {
           const first = counter();
@@ -104,8 +104,8 @@ describe('createContext', () => {
       test('should override the outer context', () => {
         const outerBuilder = vi.fn(() => new Counter());
         const innerBuilder = vi.fn(() => new Counter());
-        const runOuter = counter.scoped(outerBuilder);
-        const runInner = counter.scoped(innerBuilder);
+        const runOuter = withCounter(outerBuilder);
+        const runInner = withCounter(innerBuilder);
 
         runOuter(() => {
           const outer = counter();
@@ -122,8 +122,8 @@ describe('createContext', () => {
       test('should return the outer context in the inner builder', () => {
         const outerBuilder = vi.fn(() => new Counter());
         const innerBuilder = vi.fn(() => counter());
-        const runOuter = counter.scoped(outerBuilder);
-        const runInner = counter.scoped(innerBuilder);
+        const runOuter = withCounter(outerBuilder);
+        const runInner = withCounter(innerBuilder);
 
         runOuter(() => {
           const outer = counter();
@@ -143,13 +143,13 @@ describe('createContext', () => {
     const builder = vi.fn(() => new Counter());
 
     test('should return the provided context', () => {
-      counter.transient(builder, () => {
+      withCounter.transient(builder, () => {
         expect(counter().current).toBe(0);
       });
     });
 
     test('should return a new context each time', () => {
-      counter.transient(builder, () => {
+      withCounter.transient(builder, () => {
         const first = counter();
         const second = counter();
 
@@ -162,10 +162,10 @@ describe('createContext', () => {
       const outerBuilder = vi.fn(() => new Counter());
       const innerBuilder = vi.fn(() => new Counter(10));
 
-      counter.transient(outerBuilder, () => {
+      withCounter.transient(outerBuilder, () => {
         expect(counter().current).toBe(0);
 
-        counter.transient(innerBuilder, () => {
+        withCounter.transient(innerBuilder, () => {
           expect(counter().current).toBe(10);
         });
 
@@ -177,10 +177,10 @@ describe('createContext', () => {
       const outerBuilder = vi.fn(() => new Counter(1));
       const innerBuilder = vi.fn(() => new Counter(counter().current + 1));
 
-      counter.transient(outerBuilder, () => {
+      withCounter.transient(outerBuilder, () => {
         expect(counter().current).toBe(1);
 
-        counter.transient(innerBuilder, () => {
+        withCounter.transient(innerBuilder, () => {
           expect(counter().current).toBe(2);
         });
 
@@ -190,7 +190,7 @@ describe('createContext', () => {
 
     describe('when using curried form', () => {
       test('should return the provided context', () => {
-        const run = counter.transient(builder);
+        const run = withCounter.transient(builder);
 
         run(() => {
           expect(counter().current).toBe(0);
@@ -198,7 +198,7 @@ describe('createContext', () => {
       });
 
       test('should return a new context each time', () => {
-        const run = counter.transient(builder);
+        const run = withCounter.transient(builder);
 
         run(() => {
           const first = counter();
@@ -212,8 +212,8 @@ describe('createContext', () => {
       test('should override the outer context', () => {
         const outerBuilder = vi.fn(() => new Counter());
         const innerBuilder = vi.fn(() => new Counter(10));
-        const runOuter = counter.transient(outerBuilder);
-        const runInner = counter.transient(innerBuilder);
+        const runOuter = withCounter.transient(outerBuilder);
+        const runInner = withCounter.transient(innerBuilder);
 
         runOuter(() => {
           expect(counter().current).toBe(0);
@@ -229,8 +229,8 @@ describe('createContext', () => {
       test('should return the outer context in the inner builder', () => {
         const outerBuilder = vi.fn(() => new Counter(1));
         const innerBuilder = vi.fn(() => new Counter(counter().current + 1));
-        const runOuter = counter.transient(outerBuilder);
-        const runInner = counter.transient(innerBuilder);
+        const runOuter = withCounter.transient(outerBuilder);
+        const runInner = withCounter.transient(innerBuilder);
 
         runOuter(() => {
           expect(counter().current).toBe(1);
@@ -250,14 +250,14 @@ describe('createContext', () => {
       const scoped = new Counter();
       const builder = () => new Counter();
 
-      counter.scoped(() => scoped, () => {
+      withCounter(() => scoped, () => {
         const scopedValue1 = counter();
         scopedValue1.increment();
 
         expect(scopedValue1).toBe(scoped);
         expect(scopedValue1.current).toBe(1);
 
-        counter.transient(builder, () => {
+        withCounter.transient(builder, () => {
           const transientValue1 = counter();
           const transientValue2 = counter();
           transientValue2.increment();
@@ -280,14 +280,14 @@ describe('createContext', () => {
       const scoped = new Counter();
       const builder = () => new Counter();
 
-      counter.transient(builder, () => {
+      withCounter.transient(builder, () => {
         const transientValue1 = counter();
         transientValue1.increment();
 
         expect(transientValue1).not.toBe(scoped);
         expect(transientValue1.current).toBe(1);
 
-        counter.scoped(() => scoped, () => {
+        withCounter(() => scoped, () => {
           const scopedValue1 = counter();
           const scopedValue2 = counter();
 
@@ -313,8 +313,8 @@ describe('withContexts', () => {
     constructor(public name: string) {}
   }
 
-  const database = createContext<Database>();
-  const mailer = createContext<Mailer>();
+  const [database, withDatabase] = createContext<Database>();
+  const [mailer, withMailer] = createContext<Mailer>();
 
   describe('when context is not provided', () => {
     test('should execute the function', () => {
@@ -334,7 +334,7 @@ describe('withContexts', () => {
       });
 
       const result = withContexts([
-        database.scoped(() => new Database('database')),
+        withDatabase(() => new Database('database')),
       ], fn);
 
       expect(fn).toBeCalledTimes(1);
@@ -353,8 +353,8 @@ describe('withContexts', () => {
       });
 
       const result = withContexts([
-        database.scoped(() => new Database('database')),
-        mailer.scoped(() => new Mailer('mailer')),
+        withDatabase(() => new Database('database')),
+        withMailer(() => new Mailer('mailer')),
       ], fn);
 
       expect(fn).toBeCalledTimes(1);
@@ -377,7 +377,7 @@ describe('withContexts', () => {
     describe('when context is provided', () => {
       test('should provide the context ', () => {
         const runner = withContexts([
-          database.scoped(() => new Database('database')),
+          withDatabase(() => new Database('database')),
         ]);
         const fn = vi.fn(() => {
           expect(database().name).toBe('database');
@@ -394,8 +394,8 @@ describe('withContexts', () => {
     describe('when multiple contexts are provided', () => {
       test('should provide all contexts', () => {
         const runner = withContexts([
-          database.scoped(() => new Database('database')),
-          mailer.scoped(() => new Mailer('mailer')),
+          withDatabase(() => new Database('database')),
+          withMailer(() => new Mailer('mailer')),
         ]);
         const fn = vi.fn(() => {
           expect(database().name).toBe('database');

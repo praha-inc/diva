@@ -1,45 +1,30 @@
 import { StackStorage } from './internal/stack-storage';
 import { Mock } from './internal/symbol';
 
-export type Context<T> = {
-  (): T;
-  scoped: {
-    <R>(builder: () => T, fn: () => R): R;
-    (builder: () => T): <R>(fn: () => R) => R;
-  };
+export type Resolver<T> = () => T;
+
+export type Provider<T> = {
+  <R>(builder: () => T, fn: () => R): R;
+  (builder: () => T): <R>(fn: () => R) => R;
   transient: {
     <R>(builder: () => T, fn: () => R): R;
     (builder: () => T): <R>(fn: () => R) => R;
   };
-  [Mock]: T | (() => T) | undefined;
+  [Mock]?: T | (() => T) | undefined;
 };
 
 export type CreateContext = {
-  <T>(options?: { required?: true }): Context<T>;
-  <T>(options: { required: false }): Context<T | undefined>;
+  <T>(options?: { required?: true }): [Resolver<T>, Provider<T>];
+  <T>(options: { required: false }): [Resolver<T | undefined>, Provider<T | undefined>];
 };
 
 export const createContext: CreateContext = <T>({
   required = true,
-} = {}): Context<T> | Context<T | undefined> => {
+} = {}): [Resolver<T | undefined>, Provider<T | undefined>] => {
   const storage = new StackStorage<() => T | undefined>();
 
-  const context = (() => {
-    using builder = storage.getItem();
-    if (!builder) {
-      if (context[Mock] !== undefined) {
-        return typeof context[Mock] === 'function' ? (context[Mock] as () => T)() : context[Mock];
-      }
-      if (required) {
-        throw new Error('Context not provided. Use scoped() or transient() to set a value.');
-      }
-      return;
-    }
-    return builder();
-  }) as Context<T | undefined>;
-
-  context.scoped = <R>(builder: () => T | undefined, fn?: () => R): R | ((fn: () => R) => R) => {
-    const provider = (fn: () => R) => {
+  const provider: Provider<T | undefined> = <R>(builder: () => T | undefined, fn?: () => R): R | ((fn: () => R) => R) => {
+    const providerFn = (fn: () => R) => {
       let cache: T | undefined;
       let initialized = false;
 
@@ -54,18 +39,32 @@ export const createContext: CreateContext = <T>({
       return storage.run(builderFn, fn);
     };
 
-    return fn ? provider(fn) : provider;
+    return fn ? providerFn(fn) : providerFn;
   };
 
-  context.transient = <R>(builder: () => T | undefined, fn?: () => R): R | ((fn: () => R) => R) => {
-    const provider = (fn: () => R) => {
+  provider.transient = <R>(builder: () => T | undefined, fn?: () => R): R | ((fn: () => R) => R) => {
+    const providerFn = (fn: () => R) => {
       return storage.run(builder, fn);
     };
 
-    return fn ? provider(fn) : provider;
+    return fn ? providerFn(fn) : providerFn;
   };
 
-  return context;
+  const resolver: Resolver<T | undefined> = () => {
+    using builder = storage.getItem();
+    if (!builder) {
+      if (provider[Mock] !== undefined) {
+        return typeof provider[Mock] === 'function' ? (provider[Mock] as () => T)() : provider[Mock];
+      }
+      if (required) {
+        throw new Error('Context not provided. Use scoped() or transient() to set a value.');
+      }
+      return;
+    }
+    return builder();
+  };
+
+  return [resolver, provider];
 };
 
 export type WithContexts = {

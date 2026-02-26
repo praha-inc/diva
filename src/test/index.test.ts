@@ -12,19 +12,19 @@ describe('mockContext', () => {
     }
   }
 
-  const counter = createContext<Counter>();
+  const [counter, withCounter] = createContext<Counter>();
 
   test('should return the mocked instance', () => {
     const instance = new Counter();
 
-    mockContext(counter, () => instance);
+    mockContext(withCounter, () => instance);
 
     expect(counter()).toBe(instance);
     expect(counter().current).toBe(0);
   });
 
   test('should return the same instance', () => {
-    mockContext(counter, () => new Counter());
+    mockContext(withCounter, () => new Counter());
 
     const first = counter();
     const second = counter();
@@ -33,7 +33,7 @@ describe('mockContext', () => {
   });
 
   test('should allow modifying the mocked instance', () => {
-    mockContext(counter, () => new Counter());
+    mockContext(withCounter, () => new Counter());
 
     expect(counter().current).toBe(0);
 
@@ -45,14 +45,14 @@ describe('mockContext', () => {
   describe('when using transient', () => {
     test('should return the mocked instance', () => {
       const instance = new Counter();
-      mockContext.transient(counter, () => instance);
+      mockContext.transient(withCounter, () => instance);
 
       expect(counter()).toBe(instance);
       expect(counter().current).toBe(0);
     });
 
     test('should return a new instance each time', () => {
-      mockContext.transient(counter, () => new Counter());
+      mockContext.transient(withCounter, () => new Counter());
 
       const first = counter();
       const second = counter();
