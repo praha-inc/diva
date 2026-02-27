@@ -33,6 +33,72 @@ import { Mock } from './internal/symbol';
 export type Resolver<T> = () => T;
 
 /**
+ * A provider function type that supports both direct and curried invocation patterns.
+ *
+ * @typeParam T - The type of value provided by this context
+ *
+ * @remarks
+ * ProviderFn is the core function type for establishing context scopes.
+ * It supports two calling patterns for flexibility:
+ * 1. Direct call: `provider(builder, fn)` - Immediately executes fn within the context
+ * 2. Curried call: `provider(builder)(fn)` - Returns a function that will execute fn within the context
+ *
+ * This type is used as the base for the {@link Provider} type, which extends it
+ * with additional properties like `transient` for different scoping strategies.
+ *
+ * @example
+ * Direct invocation
+ * ```ts
+ * import { createContext } from '@praha/diva';
+ *
+ * const [database, withDatabase] = createContext<Database>();
+ *
+ * // Direct call - builder and fn are passed together
+ * withDatabase(() => new Database(), () => {
+ *   const db = database();
+ *   // Use database instance
+ * });
+ * ```
+ *
+ * @example
+ * Curried invocation
+ * ```ts
+ * import { createContext } from '@praha/diva';
+ *
+ * const [database, withDatabase] = createContext<Database>();
+ *
+ * // Curried call - builder is passed first, returns a function
+ * const run = withDatabase(() => new Database());
+ *
+ * // Execute within the scoped context later
+ * run(() => {
+ *   const db = database();
+ *   // Use database instance
+ * });
+ * ```
+ */
+export type ProviderFn<T> = {
+  /**
+   * Provides a context value within a scope using direct invocation.
+   *
+   * @typeParam R - The return type of the function to execute
+   * @param builder - A function that builds/creates the context value
+   * @param fn - The function to execute within the context scope
+   * @returns The result of executing fn
+   */
+  <R>(builder: () => T, fn: () => R): R;
+
+  /**
+   * Provides a context value using curried invocation.
+   *
+   * @typeParam R - The return type of the function to execute
+   * @param builder - A function that builds/creates the context value
+   * @returns A function that accepts fn and executes it within the context scope
+   */
+  (builder: () => T): <R>(fn: () => R) => R;
+};
+
+/**
  * A provider function that establishes a context scope with a given value builder.
  *
  * @typeParam T - The type of value provided by this context
@@ -87,26 +153,7 @@ export type Resolver<T> = () => T;
  * });
  * ```
  */
-export type Provider<T> = {
-  /**
-   * Provides a context value within a scope using direct invocation.
-   *
-   * @typeParam R - The return type of the function to execute
-   * @param builder - A function that builds/creates the context value
-   * @param fn - The function to execute within the context scope
-   * @returns The result of executing fn
-   */
-  <R>(builder: () => T, fn: () => R): R;
-
-  /**
-   * Provides a context value using curried invocation.
-   *
-   * @typeParam R - The return type of the function to execute
-   * @param builder - A function that builds/creates the context value
-   * @returns A function that accepts fn and executes it within the context scope
-   */
-  (builder: () => T): <R>(fn: () => R) => R;
-
+export type Provider<T> = ProviderFn<T> & {
   /**
    * Transient provider that creates a new instance on each resolution.
    *
@@ -114,26 +161,7 @@ export type Provider<T> = {
    * Unlike the default scoped behavior which caches the built value,
    * transient creates a new instance every time the resolver is called.
    */
-  transient: {
-    /**
-     * Provides a transient context value using direct invocation.
-     *
-     * @typeParam R - The return type of the function to execute
-     * @param builder - A function that builds/creates the context value
-     * @param fn - The function to execute within the context scope
-     * @returns The result of executing fn
-     */
-    <R>(builder: () => T, fn: () => R): R;
-
-    /**
-     * Provides a transient context value using curried invocation.
-     *
-     * @typeParam R - The return type of the function to execute
-     * @param builder - A function that builds/creates the context value
-     * @returns A function that accepts fn and executes it within the context scope
-     */
-    (builder: () => T): <R>(fn: () => R) => R;
-  };
+  transient: ProviderFn<T>;
 
   /**
    * Mock value or factory function for testing purposes.
