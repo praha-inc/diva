@@ -75,7 +75,7 @@
     "@types/node": "25.9.4",
     "eslint": "9.39.4",
     "pkg-pr-new": "0.0.75",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "vitest": "4.1.10"
   },
   "packageManager": "pnpm@10.34.4",
