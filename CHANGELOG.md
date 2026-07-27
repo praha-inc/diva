@@ -1,5 +1,11 @@
 # @praha/diva
 
+## 1.1.0
+
+### Minor Changes
+
+- [#121](https://github.com/praha-inc/diva/pull/121) [`b884899`](https://github.com/praha-inc/diva/commit/b88489903c90c4bed29c31f22b8ddf27661bfadb) Thanks [@Karibash](https://github.com/Karibash)! - Add `defaultValue` option to `createContext` for a fallback value used when no provider is active
+
 ## 1.0.2
 
 ### Patch Changes
