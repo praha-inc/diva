@@ -26,6 +26,90 @@ describe('createContext', () => {
       test('should return undefined', () => {
         expect(counter()).toBeUndefined();
       });
+
+      describe('when defaultValue is set to undefined', () => {
+        const [counter] = createContext<Counter>({ defaultValue: undefined, required: false });
+
+        test('should return undefined', () => {
+          expect(counter()).toBeUndefined();
+        });
+      });
+
+      describe('when defaultValue is set to a value', () => {
+        const defaultCounter = new Counter();
+        const [counter, withCounter] = createContext<Counter>({ defaultValue: defaultCounter, required: false });
+
+        test('should return the default value instead of undefined', () => {
+          expect(counter()).toBe(defaultCounter);
+        });
+
+        test('should allow the provider to explicitly build undefined', () => {
+          withCounter((): Counter | undefined => undefined, () => {
+            expect(counter()).toBeUndefined();
+          });
+        });
+      });
+
+      describe('when defaultValue is set to a function', () => {
+        const builder = vi.fn(() => new Counter());
+        const [counter, withCounter] = createContext<Counter>({ defaultValue: builder, required: false });
+
+        test('should return the default value instead of undefined', () => {
+          expect(counter()).toBeInstanceOf(Counter);
+          expect(builder).toBeCalledTimes(1);
+        });
+
+        test('should allow the provider to explicitly build undefined', () => {
+          withCounter((): Counter | undefined => undefined, () => {
+            expect(counter()).toBeUndefined();
+          });
+          expect(builder).not.toBeCalled();
+        });
+      });
+    });
+
+    describe('when defaultValue is set to a value', () => {
+      const defaultCounter = new Counter();
+      const [counter, withCounter] = createContext<Counter>({ defaultValue: defaultCounter });
+
+      test('should return the default value', () => {
+        expect(counter()).toBe(defaultCounter);
+      });
+
+      describe('when context is provided', () => {
+        test('should return the provided context instead of the default value', () => {
+          const providedCounter = new Counter();
+
+          withCounter(() => providedCounter, () => {
+            expect(counter()).toBe(providedCounter);
+          });
+        });
+      });
+    });
+
+    describe('when defaultValue is set to a function', () => {
+      const builder = vi.fn(() => new Counter());
+      const [counter, withCounter] = createContext<Counter>({ defaultValue: builder });
+
+      test('should return the same cached instance across multiple resolutions', () => {
+        const first = counter();
+        const second = counter();
+
+        expect(first).toBeInstanceOf(Counter);
+        expect(first).toBe(second);
+        expect(builder).toBeCalledTimes(1);
+      });
+
+      describe('when context is provided', () => {
+        test('should return the provided context instead of the default value', () => {
+          const providedCounter = new Counter();
+
+          withCounter(() => providedCounter, () => {
+            expect(counter()).toBe(providedCounter);
+          });
+          expect(builder).not.toBeCalled();
+        });
+      });
     });
   });
 

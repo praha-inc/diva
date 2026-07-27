@@ -79,6 +79,24 @@ const [config, withConfig] = createContext<Config>({ required: false });
 const maybeConfig = config(); // undefined
 ```
 
+#### Default Values
+
+Provide a `defaultValue` (a value or a factory function) that the resolver falls back to when no provider is active, instead of throwing or returning `undefined`:
+
+```ts
+const [config, withConfig] = createContext<Config>({
+  defaultValue: () => ({ debug: false }),
+});
+
+// Outside provider scope - returns the default value instead of throwing
+const defaultConfig = config(); // { debug: false }
+const sameConfig = config(); // Same instance - the factory is only called once and cached
+
+withConfig(() => ({ debug: true }), () => {
+  const providedConfig = config(); // { debug: true } - provider takes precedence
+});
+```
+
 #### Composing Multiple Contexts
 
 Use `withContexts()` to compose multiple context providers:

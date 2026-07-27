@@ -1,3 +1,4 @@
+import { memoize } from './internal/memoize';
 import { StackStorage } from './internal/stack-storage';
 import { Mock } from './internal/symbol';
 
@@ -206,6 +207,18 @@ export type Provider<T> = ProviderFn<T> & {
  *   logger.info('This is a log message without context', loggerContext()); // Logs with undefined context
  * });
  * ```
+ *
+ * @example
+ * ```ts
+ * import { createContext } from '@praha/diva';
+ *
+ * // Context with a default value, used when no provider is active
+ * const [config] = createContext<Config>({
+ *   defaultValue: () => ({ debug: false }),
+ * });
+ *
+ * config(); // Returns { debug: false } even without a provider
+ * ```
  */
 export type CreateContext = {
   /**
@@ -225,27 +238,52 @@ export type CreateContext = {
    * @returns A tuple of [Resolver, Provider] for the optional context
    */
   <T>(options: { required: false }): [Resolver<T | undefined>, Provider<T | undefined>];
+
+  /**
+   * Creates a required context pair backed by a default value.
+   *
+   * @typeParam T - The type of value managed by this context
+   * @param options - Configuration options including a default value used when no provider is active
+   * @returns A tuple of [Resolver, Provider] for the context
+   *
+   * @remarks
+   * When `defaultValue` is provided, the resolver returns it instead of throwing when no provider
+   * is active. If it's a function, it's called at most once and the result is cached for
+   * subsequent resolutions, matching the caching behavior of a default (non-transient) provider.
+   */
+  <T>(options: { defaultValue: T | (() => T); required?: true }): [Resolver<T>, Provider<T>];
+
+  /**
+   * Creates an optional context pair backed by a default value.
+   *
+   * @typeParam T - The type of value managed by this context
+   * @param options - Configuration options with required set to false, including a default value used when no provider is active
+   * @returns A tuple of [Resolver, Provider] for the optional context
+   *
+   * @remarks
+   * When `defaultValue` is provided, the resolver returns it instead of returning undefined when
+   * no provider is active. If it's a function, it's called at most once and the result is cached
+   * for subsequent resolutions, matching the caching behavior of a default (non-transient)
+   * provider. Since `required` is false, the Resolver and Provider still allow `undefined`, so a
+   * provider may explicitly build `undefined`, and `defaultValue` itself may also be (or resolve
+   * to) `undefined`.
+   */
+  <T>(options: { defaultValue: T | undefined | (() => T | undefined); required: false }): [Resolver<T | undefined>, Provider<T | undefined>];
 };
 
 export const createContext: CreateContext = <T>({
   required = true,
-} = {}): [Resolver<T | undefined>, Provider<T | undefined>] => {
+  defaultValue,
+}: { required?: boolean; defaultValue?: T | undefined | (() => T | undefined) } = {}): [Resolver<T | undefined>, Provider<T | undefined>] => {
   const storage = new StackStorage<() => T | undefined>();
+
+  const resolveDefaultValue = memoize((): T | undefined => (
+    typeof defaultValue === 'function' ? (defaultValue as () => T)() : defaultValue
+  ));
 
   const provider: Provider<T | undefined> = <R>(builder: () => T | undefined, fn?: () => R): R | ((fn: () => R) => R) => {
     const providerFn = (fn: () => R) => {
-      let cache: T | undefined;
-      let initialized = false;
-
-      const builderFn = (): T | undefined => {
-        if (!initialized) {
-          cache = builder();
-          initialized = true;
-        }
-        return cache;
-      };
-
-      return storage.run(builderFn, fn);
+      return storage.run(memoize(builder), fn);
     };
 
     return fn ? providerFn(fn) : providerFn;
@@ -264,6 +302,10 @@ export const createContext: CreateContext = <T>({
     if (!builder) {
       if (provider[Mock] !== undefined) {
         return typeof provider[Mock] === 'function' ? (provider[Mock] as () => T)() : provider[Mock];
+      }
+
+      if (defaultValue !== undefined) {
+        return resolveDefaultValue();
       }
 
       if (required) {
