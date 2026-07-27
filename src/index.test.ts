@@ -447,7 +447,7 @@ describe('withContexts', () => {
   });
 
   describe('when using curried form', () => {
-    describe('when context is provided', () => {
+    describe('when context is not provided', () => {
       test('should execute the function', () => {
         const runner = withContexts([]);
         const fn = vi.fn(() => 'result');
