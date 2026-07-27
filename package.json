@@ -24,7 +24,7 @@
   "exports": {
     ".": {
       "require": {
-        "types": "./dist/cjs/index.d.ts",
+        "types": "./dist/cjs/index.d.cts",
         "default": "./dist/cjs/index.cjs"
       },
       "import": {
@@ -34,7 +34,7 @@
     },
     "./test": {
       "require": {
-        "types": "./dist/cjs/test/index.d.ts",
+        "types": "./dist/cjs/test/index.d.cts",
         "default": "./dist/cjs/test/index.cjs"
       },
       "import": {
@@ -45,7 +45,7 @@
   },
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
-  "types": "./dist/cjs/index.d.ts",
+  "types": "./dist/cjs/index.d.cts",
   "files": [
     "dist",
     "LICENSE",
@@ -72,7 +72,7 @@
     "oxlint": "1.75.0",
     "oxlint-tsgolint": "7.0.2001",
     "pkg-pr-new": "0.0.79",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "vitest": "4.1.10"
   },
   "packageManager": "pnpm@10.34.5",
