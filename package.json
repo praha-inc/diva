@@ -71,7 +71,7 @@
     "@types/node": "25.9.5",
     "oxlint": "1.75.0",
     "oxlint-tsgolint": "7.0.2001",
-    "pkg-pr-new": "0.0.79",
+    "pkg-pr-new": "0.0.80",
     "typescript": "7.0.2",
     "vitest": "4.1.10"
   },
