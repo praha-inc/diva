@@ -70,7 +70,7 @@
     "@tsconfig/strictest": "2.0.8",
     "@types/node": "25.9.7",
     "oxlint": "1.83.0",
-    "oxlint-tsgolint": "7.0.2001",
+    "oxlint-tsgolint": "7.0.2002",
     "pkg-pr-new": "0.0.88",
     "typescript": "7.0.2",
     "vitest": "4.1.11"
