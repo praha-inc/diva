@@ -68,7 +68,7 @@
     "@praha/oxlint-config-standard": "1.0.2",
     "@rslib/core": "0.23.2",
     "@tsconfig/strictest": "2.0.8",
-    "@types/node": "25.9.6",
+    "@types/node": "25.9.7",
     "oxlint": "1.83.0",
     "oxlint-tsgolint": "7.0.2001",
     "pkg-pr-new": "0.0.88",
