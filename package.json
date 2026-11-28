@@ -73,7 +73,7 @@
     "oxlint-tsgolint": "7.0.2008",
     "pkg-pr-new": "0.0.94",
     "typescript": "7.0.2",
-    "vitest": "4.1.12"
+    "vitest": "5.1.2"
   },
   "packageManager": "pnpm@11.29.0",
   "publishConfig": {
